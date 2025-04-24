@@ -22,8 +22,12 @@ class UsersAdapter(private val context: Context) : BaseAdapter() {
         return users.size
     }
 
-    override fun getItem(p0: Int): Any {
-        return users[p0]
+    override fun getItem(index: Int): Any {
+        return getUser(index)
+    }
+
+    fun getUser(index: Int): User {
+        return users[index]
     }
 
     override fun getItemId(p0: Int): Long {
