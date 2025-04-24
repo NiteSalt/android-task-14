@@ -5,7 +5,34 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_margin="20px"
-    android:gravity="center_horizontal"
     android:orientation="vertical"
-    tools:context=".UsersActivity"/>
+    tools:context=".PrivateChatActivity">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/messageInput"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Напишите сообщение..." />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/sendButton"
+            android:onClick="onSendButtonClick"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Отправить" />
+    </LinearLayout>
+</LinearLayout>
