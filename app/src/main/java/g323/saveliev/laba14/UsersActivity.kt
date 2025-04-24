@@ -1,5 +1,6 @@
 package g323.saveliev.laba14
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -53,12 +54,43 @@ class UsersActivity : AppCompatActivity() {
 
         userJob?.cancel()
 
-        userJob = CoroutineScope(Dispatchers.Main).launch {
+        userJob = CoroutineScope(Dispatchers.IO).launch {
             try {
-                
+                val url = URL("http://${MainActivity.ServerIP}:7314/api/chat/get/${user.ipAddress}")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+
+                when (connection.responseCode) {
+                    200 -> {
+                        val jsonResponse = JSONObject(Utilities.readStreamString(connection.inputStream))
+                        val privateChatId = jsonResponse.getLong("id")
+
+                        runOnUiThread {
+                            val intent = Intent(this@UsersActivity, PrivateChatActivity::class.java)
+                            intent.putExtra("chatId", privateChatId)
+                            startActivity(intent)
+                        }
+                    }
+                    400 -> {
+                        runOnUiThread {
+                            Toast.makeText(this@UsersActivity, "Вы не можете писать сообщения самому себе!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    404 -> {
+                        runOnUiThread {
+                            Toast.makeText(this@UsersActivity, "Пользователь не найден!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
             }
             catch (e: Exception) {
-                Toast.makeText(this@UsersActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                e.printStackTrace()
+            }
+            finally {
+                runOnUiThread {
+                    swipeRefreshLayout.isRefreshing = false
+                    inProcess = false
+                }
             }
         }
     }
