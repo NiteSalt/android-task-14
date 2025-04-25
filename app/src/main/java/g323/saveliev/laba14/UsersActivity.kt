@@ -68,6 +68,7 @@ class UsersActivity : AppCompatActivity() {
                         runOnUiThread {
                             val intent = Intent(this@UsersActivity, PrivateChatActivity::class.java)
                             intent.putExtra("chatId", privateChatId)
+                            intent.putExtra("otherIp", user.ipAddress)
                             startActivity(intent)
                         }
                     }
