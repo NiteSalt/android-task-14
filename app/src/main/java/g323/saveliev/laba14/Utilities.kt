@@ -1,6 +1,10 @@
 package g323.saveliev.laba14
 
 import java.io.InputStream
+import java.text.SimpleDateFormat
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 
 class Utilities {
@@ -16,6 +20,14 @@ class Utilities {
             }
 
             return res.toString()
+        }
+
+        fun formatUtcToTime(utcDateTimeString: String): String {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
+            val date = inputFormat.parse(utcDateTimeString)
+
+            val outputFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+            return outputFormat.format(date!!)
         }
     }
 }

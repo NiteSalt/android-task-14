@@ -59,7 +59,7 @@ class PrivateChatActivity : AppCompatActivity() {
     private fun onMessageUpdate() {
         getMessageJob?.cancel()
 
-        sendJob = CoroutineScope(Dispatchers.IO).launch {
+        getMessageJob = CoroutineScope(Dispatchers.IO).launch {
             try {
                 val url = URL("http://${MainActivity.ServerIP}:7314/api/chat/get_messages/$chatId")
 
@@ -78,7 +78,7 @@ class PrivateChatActivity : AppCompatActivity() {
                             val message = Message(
                                 messageJson.getLong("id"),
                                 messageJson.getJSONObject("sender").getString("ipAddress"),
-                                messageJson.getString("date"),
+                                Utilities.formatUtcToTime(messageJson.getString("date")),
                                 messageJson.getString("content")
                             )
 
@@ -99,6 +99,10 @@ class PrivateChatActivity : AppCompatActivity() {
     fun onSendButtonClick(view: View) {
         val content = contentField.text.toString()
 
+        if (content.isBlank()) {
+            return
+        }
+
         sendJob?.cancel()
 
         sendJob = CoroutineScope(Dispatchers.IO).launch {
@@ -116,6 +120,7 @@ class PrivateChatActivity : AppCompatActivity() {
                 when (connection.responseCode) {
                     200 -> {
                         runOnUiThread {
+                            contentField.text?.clear()
                             Toast.makeText(this@PrivateChatActivity, "Сообщение отправлено", Toast.LENGTH_SHORT).show()
                         }
                     }
@@ -140,8 +145,8 @@ class PrivateChatActivity : AppCompatActivity() {
         serverSocket = null
     }
 
-    fun startListening() {
-        stopListening() // Stop any existing listener
+    private fun startListening() {
+        stopListening()
 
         listenerJob = CoroutineScope(Dispatchers.IO).launch {
             try {
