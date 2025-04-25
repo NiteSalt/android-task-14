@@ -16,8 +16,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.json.JSONArray
+import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
-import java.net.ServerSocket
 import java.net.URL
 
 
@@ -49,10 +49,12 @@ class PrivateChatActivity : AppCompatActivity() {
 
         adapter = MessageAdapter()
         recyclerView.adapter = adapter
-        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.layoutManager = LinearLayoutManager(this).apply {
+            reverseLayout = true
+            stackFromEnd = true
+        }
 
         onMessageUpdate()
-        startListening()
     }
 
     private var getMessageJob: Job? = null
@@ -84,8 +86,10 @@ class PrivateChatActivity : AppCompatActivity() {
 
                             adapter.add(message)
                         }
-                        adapter.notifyItemInserted(messages.length() - 1)
-                        recyclerView.scrollToPosition(messages.length() - 1)
+                        runOnUiThread {
+                            //adapter.notifyItemInserted(messages.length() - 1)
+                            recyclerView.scrollToPosition(messages.length() - 1)
+                        }
                     }
                 }
             }
@@ -112,10 +116,10 @@ class PrivateChatActivity : AppCompatActivity() {
                 connection.doOutput = true
                 connection.requestMethod = "POST"
 
-                connection.outputStream.bufferedWriter().use { writer ->
-                    writer.write(content)
-                    writer.flush()
-                }
+                val writer = OutputStreamWriter(connection.outputStream)
+                writer.write(content)
+                writer.flush()
+
 
                 when (connection.responseCode) {
                     200 -> {
@@ -128,32 +132,6 @@ class PrivateChatActivity : AppCompatActivity() {
                         runOnUiThread {
                             Toast.makeText(this@PrivateChatActivity, "Чат не существует", Toast.LENGTH_SHORT).show()
                         }
-                    }
-                }
-            }
-            catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    private var serverSocket: ServerSocket? = null
-    private var listenerJob: Job? = null
-    private fun stopListening() {
-        listenerJob?.cancel()
-        serverSocket?.close()
-        serverSocket = null
-    }
-
-    private fun startListening() {
-        stopListening()
-
-        listenerJob = CoroutineScope(Dispatchers.IO).launch {
-            try {
-                serverSocket = ServerSocket(7314)
-                while (true) {
-                    serverSocket?.accept()?.use {
-                        onMessageUpdate()
                     }
                 }
             }

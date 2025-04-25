@@ -2,7 +2,10 @@ package g323.saveliev.laba14
 
 import java.io.InputStream
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -23,11 +26,15 @@ class Utilities {
         }
 
         fun formatUtcToTime(utcDateTimeString: String): String {
-            val inputFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
-            val date = inputFormat.parse(utcDateTimeString)
+            val cleanedInput = utcDateTimeString.substringBefore(".") + "Z"
 
-            val outputFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-            return outputFormat.format(date!!)
+            val instant = Instant.parse(cleanedInput)
+
+            val localTime = instant.atZone(ZoneId.systemDefault())
+
+            val formatter = DateTimeFormatter.ofPattern("HH:mm:ss")
+
+            return localTime.format(formatter)
         }
     }
 }
