@@ -1,6 +1,7 @@
 package g323.saveliev.laba14
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
@@ -18,6 +19,8 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
+import java.net.InetAddress
+import java.net.ServerSocket
 import java.net.URL
 
 
@@ -55,6 +58,29 @@ class PrivateChatActivity : AppCompatActivity() {
         }
 
         onMessageUpdate()
+        startListen()
+    }
+
+    private var notifyJob: Job? = null
+    private fun startListen() {
+        notifyJob?.cancel()
+
+        notifyJob = CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val serverSocket = ServerSocket(27314, 10, InetAddress.getByName("0.0.0.0"))
+
+                while (true) {
+                    Log.v("SEX", "Socket pre accept")
+                    val socket = serverSocket.accept()
+
+                    onMessageUpdate()
+
+                    Log.v("SEX", "Socket accepted")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     private var getMessageJob: Job? = null
