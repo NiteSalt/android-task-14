@@ -1,5 +1,6 @@
 package g323.saveliev.laba14
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -17,10 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.json.JSONArray
-import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
-import java.net.InetAddress
-import java.net.ServerSocket
 import java.net.URL
 
 
@@ -29,6 +27,7 @@ class PrivateChatActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var contentField: TextInputEditText
     private lateinit var adapter: MessageAdapter
+    private lateinit var updaterThread: Thread
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,32 +57,21 @@ class PrivateChatActivity : AppCompatActivity() {
         }
 
         onMessageUpdate()
-        startListen()
-    }
-
-    private var notifyJob: Job? = null
-    private fun startListen() {
-        notifyJob?.cancel()
-
-        notifyJob = CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val serverSocket = ServerSocket(27314, 10, InetAddress.getByName("0.0.0.0"))
-
-                while (true) {
-                    Log.v("SEX", "Socket pre accept")
-                    val socket = serverSocket.accept()
-
-                    onMessageUpdate()
-
-                    Log.v("SEX", "Socket accepted")
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+        updaterThread = Thread {
+            while (!this@PrivateChatActivity.isDestroyed) {
+                Thread.sleep(300)
+                onMessageUpdate()
             }
         }
+        updaterThread.start()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
     }
 
     private var getMessageJob: Job? = null
+    @SuppressLint("NotifyDataSetChanged")
     private fun onMessageUpdate() {
         getMessageJob?.cancel()
 
@@ -97,24 +85,23 @@ class PrivateChatActivity : AppCompatActivity() {
                 when (connection.responseCode) {
                     200 -> {
                         val messages = JSONArray(Utilities.readStreamString(connection.inputStream))
-
-                        adapter.clear()
-
-                        for (i in 0..<messages.length()) {
-                            val messageJson = messages.getJSONObject(i)
-
-                            val message = Message(
-                                messageJson.getLong("id"),
-                                messageJson.getJSONObject("sender").getString("ipAddress"),
-                                Utilities.formatUtcToTime(messageJson.getString("date")),
-                                messageJson.getString("content")
-                            )
-
-                            adapter.add(message)
-                        }
                         runOnUiThread {
-                            //adapter.notifyItemInserted(messages.length() - 1)
-                            recyclerView.scrollToPosition(messages.length() - 1)
+                            adapter.clear()
+
+                            for (i in 0..<messages.length()) {
+                                val messageJson = messages.getJSONObject(i)
+
+                                val message = Message(
+                                    messageJson.getLong("id"),
+                                    messageJson.getJSONObject("sender").getString("ipAddress"),
+                                    Utilities.formatUtcToTime(messageJson.getString("date")),
+                                    messageJson.getString("content")
+                                )
+
+                                adapter.add(message)
+                            }
+
+                            adapter.notifyDataSetChanged()
                         }
                     }
                 }
@@ -139,13 +126,19 @@ class PrivateChatActivity : AppCompatActivity() {
             try {
                 val url = URL("http://${MainActivity.ServerIP}:7314/api/chat/send_message/$chatId")
                 val connection = url.openConnection() as HttpURLConnection
-                connection.doOutput = true
                 connection.requestMethod = "POST"
+                connection.setRequestProperty("Accept", "*/*")
+                connection.setRequestProperty("Content-Type", "text/html; charset=utf-8")
+                connection.doOutput = false
+                connection.connectTimeout = 500
+                connection.readTimeout = 500
 
-                val writer = OutputStreamWriter(connection.outputStream)
-                writer.write(content)
-                writer.flush()
+                val input: ByteArray = content.toByteArray(Charsets.UTF_8)
+                connection.outputStream.write(input)
+                connection.outputStream.flush()
+                Log.d("ServerInponse", input.toString())
 
+                Log.w("ServerResponse", Utilities.readStreamString(connection.inputStream))
 
                 when (connection.responseCode) {
                     200 -> {

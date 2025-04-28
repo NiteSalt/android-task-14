@@ -50,6 +50,8 @@ class MessageAdapter() : RecyclerView.Adapter<MessageAdapter.MessageViewHolder>(
     }
 
     fun add(message: Message) {
+        if (messages.any { i -> i.id == message.id }) return
+
         messages.add(message)
     }
 }
